@@ -1,5 +1,9 @@
 # HBNI Audio Stream Listener (Desktop version)
 
+<p align="center">
+  <img height="200" src="https://github.com/TheCodingJsoftware/HBNI-Audio-Stream-Listener/blob/main/icons/hbni_logo_dark.png" />
+</p>
+
 A Desktop version of the [mobile app](https://play.google.com/store/apps/details?id=com.thecodingjsoftware.hutteritechurch)
 
 ## faq
