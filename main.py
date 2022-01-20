@@ -1,5 +1,19 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+__author__ = "Jared Gross"
+__copyright__ = "Copyright 2022, TheCodingJ's"
+__credits__: "list[str]" = ["Jared Gross"]
+__license__ = "MIT"
+__version__ = "1.0.0"
+__updated__ = '2022-01-20 09:04:24'
+__maintainer__ = "Jared Gross"
+__email__ = "jared@pinelandfarms.ca"
+__status__ = "Production"
+
+
 from PyQt5.QtGui import QImage, QIcon, QPixmap
-from PyQt5.QtWidgets import QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget, QMainWindow, QApplication, QStyle, QMenu, QAction, QActionGroup, QDialog, qApp, QMessageBox
+from PyQt5.QtWidgets import QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget, QMainWindow, QApplication, QStyle, QMenu, QAction, QActionGroup, QDialog, qApp, QMessageBox, QSystemTrayIcon
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, Qt, QTimer, QCoreApplication, QProcess, QSettings, pyqtSignal
 from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import QApplication
@@ -12,36 +26,12 @@ from datetime import datetime
 import sys
 from rich import print
 import urllib.request
+import urllib
 import webbrowser
 from functools import partial
 import threading
 import qdarktheme
 from win10toast import ToastNotifier
-
-'''
-Development setup
-first pip install virtualenv
-
-create virtual env with:
-virtualenv venv
-
-then activate venv
-
-then install
-pip install win10toast pyqt5 miniaudio pyinstaller pyqtdarktheme
-
-To build
-pyinstaller -F --icon=icons/icon.ico --hidden-import=_cffi_backend main.py
-'''
-
-__author__ = "Jared Gross"
-__copyright__ = "Copyright 2021, TheCodingJ's"
-__credits__: "list[str]" = ["Jared Gross"]
-__license__ = "MIT"
-__version__ = "1.0.0"
-__maintainer__ = "Jared Gross"
-__email__ = "jared@pinelandfarms.ca"
-__status__ = "Production"
 
 toaster = ToastNotifier()
 
@@ -129,6 +119,7 @@ class MainWindow(QMainWindow):
         self.streamsForceStop: bool = False
         self.enabledNotifications: bool = True
         self.darkThemeEnabled: bool = False
+        self.isFullScreen: bool = False
 
         layout: QVBoxLayout() = QVBoxLayout()
 
@@ -137,6 +128,9 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon('icons/icon.png'))
 
         self.hbnilogo: QLabel() = QLabel()
+        logo: QPixmap = QPixmap('icons/hbni_logo_light.png')
+        logo = logo.scaled(200, 200, Qt.KeepAspectRatio)
+        self.hbnilogo.setPixmap(logo)
         self.hbnilogo.setAlignment(Qt.AlignCenter | Qt.AlignTop)
         layout.addWidget(self.hbnilogo)
 
@@ -220,9 +214,34 @@ class MainWindow(QMainWindow):
         actionLicense.triggered.connect(self.open_license_window)
         aboutMenu.addAction(actionLicense)
 
+        ViewMenu = QMenu("View", self)
+        actionFullScreen = QAction('Toggle Fullscreen', self)
+        actionFullScreen.triggered.connect(self.toggle_fullscreen)
+        ViewMenu.addAction(actionFullScreen)
+
+        actionHide = QAction('Hide', self)
+        actionHide.triggered.connect(self.hide)
+        ViewMenu.addAction(actionHide)
+
         self.menuBar().addMenu(settingsMenu)
         self.menuBar().addMenu(aboutMenu)
-        self.resize(480, 640)
+        self.menuBar().addMenu(ViewMenu)
+
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QIcon("icons/icon.png"))
+        show_action = QAction("Show", self)
+        quit_action = QAction("Exit", self)
+        hide_action = QAction("Hide", self)
+        show_action.triggered.connect(self.show)
+        hide_action.triggered.connect(self.hide)
+        quit_action.triggered.connect(qApp.quit)
+        tray_menu = QMenu()
+        tray_menu.addAction(show_action)
+        tray_menu.addAction(hide_action)
+        tray_menu.addAction(quit_action)
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.show()
+
 
         self.timerCheckForStreams = QTimer()
         self.timerCheckForStreams.setInterval(1000)
@@ -234,16 +253,30 @@ class MainWindow(QMainWindow):
         self.timerUpdateTimer.timeout.connect(self.update_timer)
         self.timerUpdateTimer.start()
 
+        self.load_geometry()
         self.show()
 
-    def open_about_window(self):
+    def closeEvent(self, event):
+        self.save_geometry()
+        super().closeEvent(event)
+
+    def save_geometry(self):
+        self.settings.setValue("geometry", self.saveGeometry())
+
+    def load_geometry(self):
+        if self.settings.contains("geometry"):
+            self.restoreGeometry(self.settings.value("geometry"))
+        else:
+            self.setGeometry(100, 100, 480, 740)
+
+    def open_about_window(self) -> None:
         QMessageBox.information(self, f'HBNI Audio Stream Listener', f"Developed by: TheCodingJ's", QMessageBox.Ok, QMessageBox.Ok)
 
-    def open_license_window(self):
+    def open_license_window(self) -> None:
         self.licenseUI = licensewindowUI()
         self.licenseUI.show()
 
-    def saved_toggle_menu_settings(self, checkBox: QAction()):
+    def saved_toggle_menu_settings(self, checkBox: QAction()) -> None:
         self.settings.setValue(checkBox.text(), checkBox.isChecked())
         self.btnKillAllStreams.setIcon(QIcon('icons/stop_black.png'))
         if checkBox.text() == 'Dark theme' and checkBox.isChecked():
@@ -251,7 +284,14 @@ class MainWindow(QMainWindow):
         elif checkBox.text() == 'Dark theme' and not checkBox.isChecked():
             self.toggle_lighttheme()
 
-    def toggle_darktheme(self):
+    def toggle_fullscreen(self):
+        if self.isFullScreen:
+            self.showNormal()
+        else:
+            self.showFullScreen()
+        self.isFullScreen = not self.isFullScreen
+
+    def toggle_darktheme(self) -> None:
         self.darkThemeEnabled = True
         logo: QPixmap = QPixmap('icons/hbni_logo_dark.png')
         self.btnKillAllStreams.setIcon(QIcon('icons/stop_white.png'))
@@ -259,17 +299,14 @@ class MainWindow(QMainWindow):
         self.hbnilogo.setPixmap(logo)
         self.setStyleSheet(qdarktheme.load_stylesheet())
 
-        # self.setPalette(DarkPalette())
-
-    def toggle_lighttheme(self):
+    def toggle_lighttheme(self) -> None:
         self.darkThemeEnabled = False
         logo: QPixmap = QPixmap('icons/hbni_logo_light.png')
         logo = logo.scaled(200, 200, Qt.KeepAspectRatio)
         self.hbnilogo.setPixmap(logo)
         self.setStyleSheet(qdarktheme.load_stylesheet("light"))
-        # self.setPalette(QApplication.palette())
 
-    def clearLayout(self, layout):
+    def clearLayout(self, layout) -> None:
         if layout is not None:
             while layout.count():
                 item = layout.takeAt(0)
@@ -279,7 +316,7 @@ class MainWindow(QMainWindow):
                 else:
                     self.clearLayout(item.layout())
 
-    def play_stream(self, stream_link: str):
+    def play_stream(self, stream_link: str) -> None:
         while not self.event_stop.is_set():
             with miniaudio.IceCastClient(stream_link) as source:
                 stream = miniaudio.stream_any(source, source.audio_format)
@@ -297,17 +334,18 @@ class MainWindow(QMainWindow):
         self.threadpool.start(self.worker)
 
     @pyqtSlot()
-    def kill_all_threads(self, pressed_by_button: bool = False):
+    def kill_all_threads(self, pressed_by_button: bool = False) -> None:
         try:
             self.device.stop()
         except AttributeError:
             pass
         if pressed_by_button:
             self.streamsForceStop = True
-        if self.streamPlaying: restart()
         self.btnKillAllStreams.setVisible(False)
         self.event_stop.set()
-        self.streamPlaying = False
+        if self.streamPlaying:
+            self.streamPlaying = False
+            restart()
 
     def find_active_events(self, html: str) -> str:
         regex: re = r'(?=(<div class="event">))(\w|\W)*(?<=<\/div>)'
@@ -349,7 +387,7 @@ class MainWindow(QMainWindow):
             list_matches.append(m)
         return list_matches
 
-    def update_timer(self):
+    def update_timer(self) -> None:
         try:
             if self.streamPlaying:
                 self.currentTime = datetime.now().replace(microsecond=0)
@@ -419,11 +457,20 @@ class MainWindow(QMainWindow):
         webbrowser.open(website)
 
     def check_for_website_changes(self) -> None:
-        fp = urllib.request.urlopen("http://hbniaudio.hbni.net", timeout=3)
-        mybytes: str = fp.read()
-        self.hbni_html = mybytes.decode("utf8")
-        fp.close()
-        self.update_ui()
+        try:
+            fp = urllib.request.urlopen("http://hbniaudio.hbni.net", timeout=3)
+            mybytes: str = fp.read()
+            self.hbni_html = mybytes.decode("utf8")
+            fp.close()
+            self.update_ui()
+        except (urllib.error.URLError, ConnectionResetError):
+            self.clearLayout(self.layoutStreams)
+            self.lblCallBack.setText('<h2>Network error</h2>')
+            self.lblActiveListeners.setText('Network error')
+            lblEvents: ScrollLabel() = ScrollLabel()
+            lblEvents.setText('<h3>Check if you are connected to the internet or logged into your network.</h3>')
+            self.layoutStreams.addWidget(lblEvents)
+
 
 def restart():
     os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
