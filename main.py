@@ -6,7 +6,7 @@ __copyright__ = "Copyright 2022, TheCodingJ's"
 __credits__: "list[str]" = ["Jared Gross"]
 __license__ = "MIT"
 __version__ = "1.0.0"
-__updated__ = '2022-01-20 12:57:50'
+__updated__ = '2022-01-20 14:31:34'
 __maintainer__ = "Jared Gross"
 __email__ = "jared@pinelandfarms.ca"
 __status__ = "Production"
@@ -246,8 +246,10 @@ class MainWindow(QMainWindow):
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
 
+        self.check_for_website_changes()
+
         self.timerCheckForStreams = QTimer()
-        self.timerCheckForStreams.setInterval(1000)
+        self.timerCheckForStreams.setInterval(5000)
         self.timerCheckForStreams.timeout.connect(self.check_for_website_changes)
         self.timerCheckForStreams.start()
 
