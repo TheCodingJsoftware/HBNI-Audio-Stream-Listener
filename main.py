@@ -6,7 +6,7 @@ __copyright__ = "Copyright 2022, TheCodingJ's"
 __credits__: "list[str]" = ["Jared Gross"]
 __license__ = "MIT"
 __version__ = "1.0.0"
-__updated__ = '2022-01-20 09:04:24'
+__updated__ = '2022-01-20 11:28:57'
 __maintainer__ = "Jared Gross"
 __email__ = "jared@pinelandfarms.ca"
 __status__ = "Production"
@@ -24,7 +24,7 @@ import os
 import re
 from datetime import datetime
 import sys
-from rich import print
+# from rich import print
 import urllib.request
 import urllib
 import webbrowser
@@ -170,7 +170,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(w)
         self.setWindowTitle("HBNI Audio Stream Listener")
 
-        print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
+        # print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
         settingsMenu = QMenu("Settings", self)
 
@@ -399,7 +399,6 @@ class MainWindow(QMainWindow):
             pass
 
     def update_ui(self) -> None:
-        QApplication.restoreOverrideCursor()
         self.clearLayout(self.layoutStreams)
         self.active_events = self.find_active_events(html=self.hbni_html)
         self.active_events = self.active_events.replace('h3', 'h1').replace('<p>', '<h2>').replace('</p>', '</h2>').replace('<p class="date">', '<h2>').replace('</div>', '</div><br>')
@@ -420,7 +419,7 @@ class MainWindow(QMainWindow):
 
             for title, body, host_address in zip(titles, bodies, host_addresses):
                 btnStream: QPushButton = Button(f' {title} - {body}')
-                btnStream.setToolTip(host_address)
+                btnStream.setToolTip("http://hbniaudio.hbni.net:8000" + host_address)
                 if self.darkThemeEnabled:
                     btnStream.setIcon(QIcon('icons/play_white.png'))
                 else:
@@ -428,17 +427,17 @@ class MainWindow(QMainWindow):
                 # btnStream.setFixedSize(200, 60)
                 btnStream.setStyleSheet('font-size: 18px')
                 btnStream.setEnabled(not self.streamPlaying)
-                btnStream.entered.connect(self.handle_entered)
-                btnStream.leaved.connect(self.handle_leaved)
+                # btnStream.entered.connect(self.handle_entered)
+                # btnStream.leaved.connect(self.handle_leaved)
                 btnStream.clicked.connect(partial(self.listen_to_stream, "http://hbniaudio.hbni.net:8000" + host_address))
                 self.layoutStreams.addWidget(btnStream, alignment=Qt.AlignCenter)
                 if not self.streamsOnline and self.settings.contains("Auto start stream") and self.settings.value("Auto start stream") != 'true' and self.enabledNotifications:
-                    toaster.show_toast(u'HBNI Audio Stream Listener', f'{titles[0]} just started a stream.', icon_path='icon.ico', duration=3, threaded=True)
+                    toaster.show_toast(u'HBNI Audio Stream Listener', f'{titles[0]} just started a stream.', icon_path='icons/icon.ico', duration=3, threaded=True)
             self.streamsOnline = True
 
             if self.settings.contains("Auto start stream") and self.settings.value("Auto start stream") == 'true' and not self.streamPlaying and not self.streamsForceStop:
                 if self.enabledNotifications:
-                    toaster.show_toast(u'HBNI Audio Stream Listener', f'Autoplaying currently active stream.\n{titles[0]} - {bodies[0]}', icon_path='icon.ico', duration=3, threaded=True)
+                    toaster.show_toast(u'HBNI Audio Stream Listener', f'Autoplaying currently active stream.\n{titles[0]} - {bodies[0]}', icon_path='icons/icon.ico', duration=3, threaded=True)
                 self.listen_to_stream("http://hbniaudio.hbni.net:8000" + host_addresses[0])
         elif self.active_events == '' and 'No streams currently online.' in self.hbni_html:
             self.lblCallBack.setText('<h2>No streams currently online or events scheduled</h2>')
