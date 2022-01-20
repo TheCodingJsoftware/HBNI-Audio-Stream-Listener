@@ -6,7 +6,7 @@ __copyright__ = "Copyright 2022, TheCodingJ's"
 __credits__: "list[str]" = ["Jared Gross"]
 __license__ = "MIT"
 __version__ = "1.0.0"
-__updated__ = '2022-01-20 14:31:34'
+__updated__ = '2022-01-20 15:35:55'
 __maintainer__ = "Jared Gross"
 __email__ = "jared@pinelandfarms.ca"
 __status__ = "Production"
@@ -273,6 +273,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         try:
+            self.timerUpdateTimer.stop()
+            self.timerCheckForStreams.stop()
             self.device.stop()
         except AttributeError:
             pass
@@ -357,8 +359,6 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def kill_all_threads(self, pressed_by_button: bool = False) -> None:
-        self.timerUpdateTimer.stop()
-        self.timerCheckForStreams.stop()
         try:
             self.device.stop()
         except AttributeError:
