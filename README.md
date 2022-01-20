@@ -1,5 +1,7 @@
 # HBNI Audio Stream Listener (Desktop version)
 
+A Desktop version of the [mobile app](https://play.google.com/store/apps/details?id=com.thecodingjsoftware.hutteritechurch)
+
 Development setup is as follows
 
 first install virtual env with: `pip install virtualenv`
