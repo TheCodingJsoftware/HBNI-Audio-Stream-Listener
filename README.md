@@ -6,6 +6,13 @@
 
 A Desktop version of the [mobile app](https://play.google.com/store/apps/details?id=com.thecodingjsoftware.hutteritechurch)
 
+
+## Preview:
+<p align="center">
+  <img height="400" src="https://user-images.githubusercontent.com/25397800/150418509-4d36d37f-a528-48c7-9e0a-a13946ef6b87.png" />
+  <img height="400" src="https://user-images.githubusercontent.com/25397800/150418964-d82e17b7-780a-4d66-bbe3-c4507a9c0b93.png" />
+</p>
+
 ## faq
 When downloading the release of this program, you might get errors sayings its a virus, its not. View the source if you wish. Microsoft doesn't recognize that its a valid piece of software as it has no valid licenses.
 
