@@ -6,32 +6,28 @@ __copyright__ = "Copyright 2022, TheCodingJ's"
 __credits__: "list[str]" = ["Jared Gross"]
 __license__ = "MIT"
 __version__ = "1.0.0"
-__updated__ = '2022-01-20 11:28:57'
+__updated__ = '2022-01-20 12:57:50'
 __maintainer__ = "Jared Gross"
 __email__ = "jared@pinelandfarms.ca"
 __status__ = "Production"
 
-
-from PyQt5.QtGui import QImage, QIcon, QPixmap
-from PyQt5.QtWidgets import QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget, QMainWindow, QApplication, QStyle, QMenu, QAction, QActionGroup, QDialog, qApp, QMessageBox, QSystemTrayIcon
-from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, Qt, QTimer, QCoreApplication, QProcess, QSettings, pyqtSignal
-from PyQt5.QtGui import QPalette
-from PyQt5.QtWidgets import QApplication
-from PyQt5 import uic
-import PyQt5
-import miniaudio
 import os
 import re
-from datetime import datetime
 import sys
-# from rich import print
-import urllib.request
-import urllib
-import webbrowser
-from functools import partial
 import threading
+from datetime import datetime
+import urllib
+import urllib.request
+import miniaudio
+import webbrowser
 import qdarktheme
+from functools import partial
 from win10toast import ToastNotifier
+from PyQt5 import uic
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QIcon, QPixmap, QPalette
+from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, Qt, QTimer, QCoreApplication, QProcess, QSettings, pyqtSignal
+from PyQt5.QtWidgets import QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget, QMainWindow, QApplication, QStyle, QMenu, QAction, QActionGroup, QDialog, qApp, QMessageBox, QSystemTrayIcon
 
 toaster = ToastNotifier()
 
@@ -170,10 +166,13 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(w)
         self.setWindowTitle("HBNI Audio Stream Listener")
 
-        # print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
+        # MENU ----------------------------
+        fileMenu = QMenu("File", self)
+        actionExit = QAction('Exit', self)
+        actionExit.triggered.connect(self.close)
+        fileMenu.addAction(actionExit)
 
         settingsMenu = QMenu("Settings", self)
-
         checkBox = QAction('Auto start stream', self, checkable=True)
         if self.settings.contains("Auto start stream"):
             checkBox.setChecked(True if self.settings.value("Auto start stream") == 'true' else False)
@@ -181,11 +180,13 @@ class MainWindow(QMainWindow):
         settingsMenu.addAction(checkBox)
 
         checkBox = QAction('Enable notifications', self, checkable=True)
-        checkBox.setChecked(True)
         checkBox.toggled.connect(partial(self.saved_toggle_menu_settings, checkBox))
         if self.settings.contains("Enable notifications"):
             checkBox.setChecked(True if self.settings.value("Enable notifications") == 'true' else False)
             self.enabledNotifications = True if self.settings.value("Enable notifications") == 'true' else False
+        else:
+            checkBox.setChecked(True)
+            self.enabledNotifications = True
         settingsMenu.addAction(checkBox)
 
         checkBox = QAction('Dark theme', self, checkable=True)
@@ -197,22 +198,24 @@ class MainWindow(QMainWindow):
             elif not checkBox.isChecked():
                 self.darkThemeEnabled = False
                 self.toggle_lighttheme()
+        else:
+            self.toggle_lighttheme()
 
         checkBox.toggled.connect(partial(self.saved_toggle_menu_settings, checkBox))
         settingsMenu.addAction(checkBox)
 
-        aboutMenu = QMenu("About", self)
+        helpMenu = QMenu("Help", self)
         actionAbout_Qt = QAction('About Qt', self)
         actionAbout_Qt.triggered.connect(qApp.aboutQt)
-        aboutMenu.addAction(actionAbout_Qt)
+        helpMenu.addAction(actionAbout_Qt)
 
         actionAbout = QAction('About', self)
         actionAbout.triggered.connect(self.open_about_window)
-        aboutMenu.addAction(actionAbout)
+        helpMenu.addAction(actionAbout)
 
-        actionLicense = QAction('License', self)
+        actionLicense = QAction('View License', self)
         actionLicense.triggered.connect(self.open_license_window)
-        aboutMenu.addAction(actionLicense)
+        helpMenu.addAction(actionLicense)
 
         ViewMenu = QMenu("View", self)
         actionFullScreen = QAction('Toggle Fullscreen', self)
@@ -223,8 +226,9 @@ class MainWindow(QMainWindow):
         actionHide.triggered.connect(self.hide)
         ViewMenu.addAction(actionHide)
 
+        self.menuBar().addMenu(fileMenu)
         self.menuBar().addMenu(settingsMenu)
-        self.menuBar().addMenu(aboutMenu)
+        self.menuBar().addMenu(helpMenu)
         self.menuBar().addMenu(ViewMenu)
 
         self.tray_icon = QSystemTrayIcon(self)
@@ -242,7 +246,6 @@ class MainWindow(QMainWindow):
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
 
-
         self.timerCheckForStreams = QTimer()
         self.timerCheckForStreams.setInterval(1000)
         self.timerCheckForStreams.timeout.connect(self.check_for_website_changes)
@@ -253,10 +256,26 @@ class MainWindow(QMainWindow):
         self.timerUpdateTimer.timeout.connect(self.update_timer)
         self.timerUpdateTimer.start()
 
-        self.load_geometry()
-        self.show()
+
+        if not self.settings.contains("fullscreen"):
+            self.isFullScreen = False
+            self.settings.setValue("fullscreen", False)
+        else:
+            self.isFullScreen = True if self.settings.value("fullscreen") == 'true' else False
+            if self.isFullScreen:
+                self.show()
+                self.showFullScreen()
+            else:
+                self.load_geometry()
+                self.show()
 
     def closeEvent(self, event):
+        try:
+            self.device.stop()
+        except AttributeError:
+            pass
+        self.timerUpdateTimer.stop()
+        self.timerCheckForStreams.stop()
         self.save_geometry()
         super().closeEvent(event)
 
@@ -290,6 +309,7 @@ class MainWindow(QMainWindow):
         else:
             self.showFullScreen()
         self.isFullScreen = not self.isFullScreen
+        self.settings.setValue("fullscreen", self.isFullScreen)
 
     def toggle_darktheme(self) -> None:
         self.darkThemeEnabled = True
@@ -335,6 +355,8 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def kill_all_threads(self, pressed_by_button: bool = False) -> None:
+        self.timerUpdateTimer.stop()
+        self.timerCheckForStreams.stop()
         try:
             self.device.stop()
         except AttributeError:
@@ -424,17 +446,13 @@ class MainWindow(QMainWindow):
                     btnStream.setIcon(QIcon('icons/play_white.png'))
                 else:
                     btnStream.setIcon(QIcon('icons/play_black.png'))
-                # btnStream.setFixedSize(200, 60)
                 btnStream.setStyleSheet('font-size: 18px')
                 btnStream.setEnabled(not self.streamPlaying)
-                # btnStream.entered.connect(self.handle_entered)
-                # btnStream.leaved.connect(self.handle_leaved)
                 btnStream.clicked.connect(partial(self.listen_to_stream, "http://hbniaudio.hbni.net:8000" + host_address))
                 self.layoutStreams.addWidget(btnStream, alignment=Qt.AlignCenter)
                 if not self.streamsOnline and self.settings.contains("Auto start stream") and self.settings.value("Auto start stream") != 'true' and self.enabledNotifications:
                     toaster.show_toast(u'HBNI Audio Stream Listener', f'{titles[0]} just started a stream.', icon_path='icons/icon.ico', duration=3, threaded=True)
             self.streamsOnline = True
-
             if self.settings.contains("Auto start stream") and self.settings.value("Auto start stream") == 'true' and not self.streamPlaying and not self.streamsForceStop:
                 if self.enabledNotifications:
                     toaster.show_toast(u'HBNI Audio Stream Listener', f'Autoplaying currently active stream.\n{titles[0]} - {bodies[0]}', icon_path='icons/icon.ico', duration=3, threaded=True)
@@ -458,8 +476,8 @@ class MainWindow(QMainWindow):
     def check_for_website_changes(self) -> None:
         try:
             fp = urllib.request.urlopen("http://hbniaudio.hbni.net", timeout=3)
-            mybytes: str = fp.read()
-            self.hbni_html = mybytes.decode("utf8")
+            html_bytes: str = fp.read()
+            self.hbni_html = html_bytes.decode("utf8")
             fp.close()
             self.update_ui()
         except (urllib.error.URLError, ConnectionResetError):
@@ -474,9 +492,10 @@ class MainWindow(QMainWindow):
 def restart():
     os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
 
+def main():
+    app: QApplication([]) = QApplication([])
+    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+    MainWindow()
+    app.exec_()
 
-app: QApplication([]) = QApplication([])
-app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
-window = MainWindow()
-# app.setStyle('Fusion')
-app.exec_()
+main()
