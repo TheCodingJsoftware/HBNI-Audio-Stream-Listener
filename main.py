@@ -6,7 +6,7 @@ __copyright__ = "Copyright 2022, TheCodingJ's"
 __credits__: "list[str]" = ["Jared Gross"]
 __license__ = "MIT"
 __version__ = "1.0.0"
-__updated__ = '2022-01-20 15:35:55'
+__updated__ = '2022-01-20 19:12:56'
 __maintainer__ = "Jared Gross"
 __email__ = "jared@pinelandfarms.ca"
 __status__ = "Production"
@@ -235,13 +235,10 @@ class MainWindow(QMainWindow):
         self.tray_icon.setIcon(QIcon("icons/icon.png"))
         show_action = QAction("Show", self)
         quit_action = QAction("Exit", self)
-        hide_action = QAction("Hide", self)
         show_action.triggered.connect(self.show)
-        hide_action.triggered.connect(self.hide)
         quit_action.triggered.connect(qApp.quit)
         tray_menu = QMenu()
         tray_menu.addAction(show_action)
-        tray_menu.addAction(hide_action)
         tray_menu.addAction(quit_action)
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
@@ -457,7 +454,10 @@ class MainWindow(QMainWindow):
             self.streamsOnline = True
             if self.settings.contains("Auto start stream") and self.settings.value("Auto start stream") == 'true' and not self.streamPlaying and not self.streamsForceStop:
                 if self.enabledNotifications:
-                    toaster.show_toast(u'HBNI Audio Stream Listener', f'Autoplaying currently active stream.\n{titles[0]} - {bodies[0]}', icon_path='icons/icon.ico', duration=3, threaded=True)
+                    try:
+                        toaster.show_toast(u'HBNI Audio Stream Listener', f'Autoplaying currently active stream.\n{titles[0]} - {bodies[0]}', icon_path='icons/icon.ico', duration=3, threaded=True)
+                    except IndexError:
+                        pass
                 self.listen_to_stream("http://hbniaudio.hbni.net:8000" + host_addresses[0])
         elif self.active_events == '' and 'No streams currently online.' in self.hbni_html:
             self.lblCallBack.setText('<h2>No streams currently online or events scheduled</h2>')
