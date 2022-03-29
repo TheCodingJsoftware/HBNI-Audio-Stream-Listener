@@ -1,11 +1,12 @@
 # HBNI Audio Stream Listener (Desktop version)
-
 <p align="center">
   <img height="200" src="https://github.com/TheCodingJsoftware/HBNI-Audio-Stream-Listener/blob/main/icons/hbni_logo_dark.png" />
 </p>
 
-A Desktop version of the [mobile app](https://play.google.com/store/apps/details?id=com.thecodingjsoftware.hutteritechurch)
-
+[![image](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.thecodingjsoftware.hutteritechurch)
+[![image](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/TheCodingJsoftware/HBNI-Audio-Stream-Listener/releases)
+[![image](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/TheCodingJsoftware/HBNI-Audio-Stream-Listener/releases)
+[![image](https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.thecodingjsoftware.hutteritechurch)
 
 ## Preview:
 <p align="center">
